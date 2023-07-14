@@ -11,6 +11,17 @@ const app=express();
 
 app.use(bodyParser.json()); // json parser
 
+// get user by id
+const user=userId=>{
+    return User.findById(userId).then(user=>{
+        return { ...user._doc, _id: user.id, createdEvents: events.bind(this, user._doc.createdEvents) };
+    }
+    ).catch(err=>{
+        throw err;
+    }
+    );
+}
+
 // app.get('/',(req,res,next)=>{
 //     res.send('Hello from express');
 // }
@@ -39,12 +50,14 @@ app.use('/graphql',graphqlHTTP({
             description:String!
             price:Float!
             date:String!
+            creator:User!
         }
 
         type User{
             _id:ID!
             email:String!
             password:String
+            createdEvents:[Event!]
         }
 
         input UserInput{
@@ -77,9 +90,9 @@ app.use('/graphql',graphqlHTTP({
         events:async ()=>{
             // return events;
             try {
-                const events = await Event.find();
+                const events = await Event.find().populate('creator');
                 return events.map(event => {
-                    return { ...event._doc, _id: event._doc._id.toString() };
+                    return { ...event._doc, _id: event._doc._id.toString(), creator: { ...event._doc.creator._doc, _id: event._doc.creator.id } };
                 });
             } catch (err) {
                 console.log(err);
